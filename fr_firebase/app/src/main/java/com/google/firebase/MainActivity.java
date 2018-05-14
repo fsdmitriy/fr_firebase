@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.firebase.udacity.friendlychat;
+package com.google.firebase;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -29,7 +29,6 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
 
         mUsername = ANONYMOUS;
