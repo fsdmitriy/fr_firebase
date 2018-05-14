@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "832789359269",
+    "firebase_url": "https://frendlychat-773a4.firebaseio.com",
+    "project_id": "frendlychat-773a4",
+    "storage_bucket": "frendlychat-773a4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:832789359269:android:d156a43c5da2d5d4",
+        "android_client_info": {
+          "package_name": "com.google.firebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "832789359269-gegmlmp76pauqmk95mo393fd8pf95mhd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.google.firebase",
+            "certificate_hash": "74fa0540d2f3d88402b2615bd83bc31c2b21326b"
+          }
+        },
+        {
+          "client_id": "832789359269-8mjbeu5ht2hjihjel7nulrkicjspvd47.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmVqsvft7hnWlhEycH_bLK4-dcIKtTcdI"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "832789359269-8mjbeu5ht2hjihjel7nulrkicjspvd47.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
