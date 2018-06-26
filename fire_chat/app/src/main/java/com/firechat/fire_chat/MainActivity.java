@@ -21,7 +21,9 @@ import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.firebase.ui.auth.IdpResponse;
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
@@ -35,6 +37,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -81,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
         mFirebaseStorage = FirebaseStorage.getInstance();
 
         mMessagesDatabaseReference = mFirebaseDatabase.getReference().child("messages");
-        mChatPhotosReference =mFirebaseStorage.getReference().child("chat_photos");
+        mChatPhotosReference = mFirebaseStorage.getReference().child("chat_photos");
 
         mProgressBar = findViewById(R.id.progressBar);
         mMessageListView = findViewById(R.id.messageListView);
@@ -277,18 +280,34 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "Signing was failed", Toast.LENGTH_SHORT).show();
         }else if(requestCode == RC_PHOTO_PICKER && resultCode == RESULT_OK){
             Uri imagePath = data.getData();
-            StorageReference selectedImageReference = mChatPhotosReference.child(imagePath.getLastPathSegment());
-            //TODO: handle crash while putting file to reference
-            selectedImageReference.putFile(imagePath).addOnSuccessListener(this, new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            final StorageReference selectedImageReference = mChatPhotosReference.child(imagePath.getLastPathSegment());
+            
+            //TODO: handle crash while getting path to file from Gallery on android 5.1
+            UploadTask puttingFile =  selectedImageReference.putFile(imagePath);
+            
+            puttingFile.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                 @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                    Uri uploadSessionUri = taskSnapshot.getUploadSessionUri();
-                    FriendlyMessage friendlyMessage = new FriendlyMessage(null, mUsername, uploadSessionUri.toString());
-
-                     mMessagesDatabaseReference.push().setValue(friendlyMessage);
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
                     }
-                });
+                    else
+                        return selectedImageReference.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if (task.isSuccessful()) {
+                        Uri downloadUri = task.getResult();
+                        FriendlyMessage friendlyMessage = new FriendlyMessage(null, mUsername, downloadUri.toString());
+                        mMessagesDatabaseReference.push().setValue(friendlyMessage);
+                    } else {
+                        Toast.makeText(MainActivity.this, "File upload filed with: "
+                                + task.getException().getMessage(),
+                                Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
         }
     }
 }
-
