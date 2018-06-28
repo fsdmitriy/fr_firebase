@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -33,14 +34,17 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String ANONYMOUS = "anonymous";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 1000;
+    public static final String CHAT_MESSAGE_LENGHT = "chat_message_lenght";
     private static final int RC_SIGN_IN = 1;
     private static final int RC_PHOTO_PICKER = 2;
 
@@ -67,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth.AuthStateListener mAuthStateListener;
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mChatPhotosReference;
+    private FirebaseRemoteConfig mFirebaseRemoteConfig;
 
     List<AuthUI.IdpConfig> providers = Arrays.asList(
             new AuthUI.IdpConfig.EmailBuilder().build(),
@@ -82,6 +88,7 @@ public class MainActivity extends AppCompatActivity {
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseAuth = FirebaseAuth.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
+        mFirebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
 
         mMessagesDatabaseReference = mFirebaseDatabase.getReference().child("messages");
         mChatPhotosReference = mFirebaseStorage.getReference().child("chat_photos");
@@ -108,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Enable Send button when there's text to send
         mMessageEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -129,7 +135,6 @@ public class MainActivity extends AppCompatActivity {
         });
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(DEFAULT_MSG_LENGTH_LIMIT)});
 
-        // Send button sends a message and clears the EditText
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -160,28 +165,24 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
+
+        FirebaseRemoteConfigSettings configSettings = new FirebaseRemoteConfigSettings.Builder().
+                setDeveloperModeEnabled(BuildConfig.DEBUG).
+                build();
+
+        mFirebaseRemoteConfig.setConfigSettings(configSettings);
+
+        Map<String, Object> defaultConfigMap = new HashMap<>();
+        defaultConfigMap.put(CHAT_MESSAGE_LENGHT, DEFAULT_MSG_LENGTH_LIMIT);
+        mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
+
+        fetchConfig();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-//        FirebaseUser currentUser = mFirebaseAuth.getCurrentUser();
-//        updateUI(currentUser);
     }
-
-//    private void updateUI(FirebaseUser currentUser) {
-//        if(currentUser==null){
-//            startActivityForResult(
-//                    AuthUI.getInstance()
-//                            .createSignInIntentBuilder()
-//                            .setAvailableProviders(providers)
-//                            .build(),
-//                    RC_SIGN_IN);
-//        }
-//        else{
-//            Toast.makeText(MainActivity.this, "Welcome! You're already signed in!)", Toast.LENGTH_SHORT);
-//        }
-//    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -309,5 +310,35 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+
+
+    private void fetchConfig(){
+
+        long cacheExpiration = 60*60;
+
+        if(mFirebaseRemoteConfig.getInfo().getConfigSettings().isDeveloperModeEnabled()){
+            cacheExpiration = 0;
+        }
+
+        mFirebaseRemoteConfig.fetch(cacheExpiration).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                mFirebaseRemoteConfig.activateFetched();
+                applyFetchedSettings();
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.w(TAG,"Falure while fetching", e);
+                applyFetchedSettings();
+            }
+        });
+    }
+
+    private void applyFetchedSettings(){
+       Long chat_message_leng = mFirebaseRemoteConfig.getLong(CHAT_MESSAGE_LENGHT);
+       mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(chat_message_leng.intValue())});
+       Log.w(TAG, "Chat message lenght"+String.valueOf(chat_message_leng));
     }
 }
